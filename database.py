@@ -1,3 +1,4 @@
+import datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -15,7 +16,7 @@ engine = create_async_engine(
 )
 
 
-async def get_employees():
+async def get_employees() -> ScalarResult[Employee]:
     async with AsyncSession(autoflush=False, bind=engine) as db:
         q = select(Employee)
         res = await db.execute(q)
@@ -40,7 +41,7 @@ async def create_appointment(client, doctor, date, time) -> bool:
         return True
 
 
-async def get_appointments(name: str, role:str) -> ScalarResult[Any]:
+async def get_appointments(name: str, role:str) -> ScalarResult[Appointment]:
     async with AsyncSession(autoflush=False, bind=engine) as db:
         q = select(Appointment).where(Appointment.doctor == name if role == 'doctor' else Appointment.client == name)
         appointments = await db.execute(q)
@@ -63,7 +64,7 @@ async def get_name(chatid: int, fallback_name: str) -> str:
             return None
 
 
-async def set_name(chatid: int, name: str):
+async def set_name(chatid: int, name: str) -> None:
     async with AsyncSession(autoflush=False, bind=engine) as db:
         q = select(Client).where(Client.chatid == chatid)
         res = await db.execute(q)
@@ -75,3 +76,21 @@ async def set_name(chatid: int, name: str):
             client = Client(chatid=chatid, name=name)
             db.add(client)
             await db.commit()
+
+
+async def check_time(doctor: str, date_str: str, time_str: str) -> bool:
+    date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    time = datetime.datetime.strptime(time_str, '%H:%M').time()
+
+    if date == datetime.date.today() and time <= datetime.datetime.now().time():
+        return False
+
+    async with AsyncSession(autoflush=False, bind=engine) as db:
+        q = select(Appointment).where(Appointment.doctor == doctor)
+
+        res = await db.execute(q)
+        res = res.scalars()
+        for appointment in res:
+            if appointment.date == date and appointment.time == time:
+                return False
+        return True

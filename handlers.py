@@ -60,7 +60,8 @@ async def client_appointments(message: Message, state: FSMContext) -> None:
 async def select_time(message: Message, state: FSMContext) -> None:
     await state.update_data(date=message.text)
     await state.set_state(Rec.time)
-    await message.answer('Выберите время:', reply_markup=kb.time())
+    data = await state.get_data()
+    await message.answer('Выберите время:', reply_markup=await kb.time(data['doctor'], data['date']))
 
 
 @router.message(Rec.time)

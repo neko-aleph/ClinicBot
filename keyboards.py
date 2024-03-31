@@ -33,12 +33,17 @@ def date() -> ReplyKeyboardMarkup:
     return builder.as_markup()
 
 
-def time() -> ReplyKeyboardMarkup:
+async def time(doctor: str, date: str) -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
 
+    timestamps = []
     for hour in range(8, 20+1):
-        builder.button(text=f'{hour}:00')
-        builder.button(text=f'{hour}:30')
+        timestamps.append(f'{hour}:00')
+        timestamps.append(f'{hour}:30')
+
+    for timestamp in timestamps:
+        if await database.check_time(doctor, date, timestamp):
+            builder.button(text=timestamp)
 
     builder.button(text='Отмена')
     builder.adjust(2)
