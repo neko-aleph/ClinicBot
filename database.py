@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import select, update, ScalarResult
 
 from config import settings
