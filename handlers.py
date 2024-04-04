@@ -1,4 +1,4 @@
-from aiogram import types, Router, F
+from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import StatesGroup, State
@@ -12,7 +12,7 @@ import datetime
 router = Router()
 
 
-class Rec(StatesGroup):
+class AppointmentCreation(StatesGroup):
     doctor = State()
     date = State()
     time = State()
@@ -21,20 +21,20 @@ class Rec(StatesGroup):
 
 @router.message(CommandStart())
 async def command_start_handler(message: Message, state: FSMContext) -> None:
-    await state.set_state(Rec.doctor)
+    await state.set_state(AppointmentCreation.doctor)
     await message.answer(f'Здравствуйте, {message.from_user.full_name}, на прием к какому врачу вы хотели бы записаться?',
                          reply_markup=await kb.employees())
 
 
 @router.message(F.text == 'Записаться')
 async def appoint(message: Message, state: FSMContext) -> None:
-    await state.set_state(Rec.doctor)
+    await state.set_state(AppointmentCreation.doctor)
     await message.answer(
         'На прием к какому врачу вы хотели бы записаться?', reply_markup=await kb.employees())
 
 
 @router.message((F.text == 'Мои записи') | (F.text == 'Отмена'))
-async def client_appointments(message: Message, state: FSMContext) -> None:
+async def client_appointments(message: Message) -> None:
     name = await database.get_name(message.chat.id, message.from_user.full_name)
 
     if name is None:
@@ -56,22 +56,22 @@ async def client_appointments(message: Message, state: FSMContext) -> None:
         await message.answer('У вас нет записей', reply_markup=kb.main())
 
 
-@router.message(Rec.date)
+@router.message(AppointmentCreation.date)
 async def select_time(message: Message, state: FSMContext) -> None:
     await state.update_data(date=message.text)
-    await state.set_state(Rec.time)
+    await state.set_state(AppointmentCreation.time)
     data = await state.get_data()
     await message.answer('Выберите время:', reply_markup=await kb.time(data['doctor'], data['date']))
 
 
-@router.message(Rec.time)
+@router.message(AppointmentCreation.time)
 async def select_name(message: Message, state: FSMContext) -> None:
     await state.update_data(time=message.text)
-    await state.set_state(Rec.client)
+    await state.set_state(AppointmentCreation.client)
     await message.answer('Введите имя:', reply_markup=await kb.name(message.chat.id, message.from_user.full_name))
 
 
-@router.message(Rec.client)
+@router.message(AppointmentCreation.client)
 async def finish(message: Message, state: FSMContext) -> None:
     await state.update_data(client=message.text)
     data = await state.get_data()
@@ -91,9 +91,9 @@ async def finish(message: Message, state: FSMContext) -> None:
         await message.answer(f'Не удалось записаться. Попробуйте снова', reply_markup=kb.main())
 
 
-@router.callback_query(F.data, Rec.doctor)
+@router.callback_query(F.data, AppointmentCreation.doctor)
 async def doc_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(doctor=callback.data)
     await callback.answer('Вы выбрали врача')
-    await state.set_state(Rec.date)
+    await state.set_state(AppointmentCreation.date)
     await callback.message.answer('Выберите дату:', reply_markup=kb.date())
