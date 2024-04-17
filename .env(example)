@@ -1,0 +1,6 @@
+DB_HOST=Host
+DB_PORT=Port (default port for Postgres is 5342
+DB_USER=Username
+DB_PASS=Password
+DB_NAME=Database name
+BOT_TOKEN=Telegram Bot API token
